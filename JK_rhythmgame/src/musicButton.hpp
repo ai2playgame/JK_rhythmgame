@@ -28,7 +28,7 @@ namespace jk {
 
 		beatmap* get_beatmap() const;
 
-		void setState(musicButtonState::STATE state);
+		void updateState(musicButtonState::STATE state);
 
 	};
 }

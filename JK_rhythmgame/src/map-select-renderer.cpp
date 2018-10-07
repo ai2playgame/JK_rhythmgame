@@ -1,12 +1,20 @@
 #include "map-select-renderer.hpp"
 #include "sfml-button.hpp"
 #include <iostream>
+#include <cassert>
 
 const sf::Vector2f jk::map_select_renderer::MAINBUTTON_MARGIN = { 0.f, 0.040f };
 
 void jk::map_select_renderer::init(sf::RenderWindow* window) {
-	// 変数は初期化しましょう。
-	musicButtonsItr_ = std::end(musicButtons_);
+
+	musicButtonsItr_ = std::end(musicButtons_);		//変数初期化
+	
+	//イベントハンドラ登録
+	handlers_ << std::make_pair<sf::Event::EventType, jk::event_handler_t<>>(
+		sf::Event::EventType::KeyPressed,
+		[this](sf::Event const &e)->std::uint32_t {return this->on_keyboard_down(e); }
+	);
+
 	namespace fs = std::filesystem;	
 	window_ = window;
 
@@ -59,6 +67,50 @@ void jk::map_select_renderer::initButtonPos() {
 	}
 }
 
+std::uint32_t jk::map_select_renderer::on_keyboard_down(const sf::Event & e)
+{
+	assert(e.type == sf::Event::EventType::KeyPressed);
+
+	switch (e.key.code)
+	{
+	case sf::Keyboard::Up:
+		(*musicButtonsItr_)->updateState(musicButtonState::NOT_SELECTED);			//今選択中のボタンを非選択に変更
+
+		if (musicButtonsItr_ == musicButtons_.begin()) {
+			musicButtonsItr_ = musicButtons_.end();
+		}
+		else {
+			--musicButtonsItr_;
+		}
+		(*musicButtonsItr_)->updateState(musicButtonState::SELECTED);				//今選択中のボタンを選択に変更
+		break;
+
+	case sf::Keyboard::Down:
+		(*musicButtonsItr_)->updateState(musicButtonState::NOT_SELECTED);			//今選択中のボタンを非選択に変更
+		if (musicButtonsItr_ == musicButtons_.end()) {
+			musicButtonsItr_ = musicButtons_.begin();
+		}
+		else {
+			++musicButtonsItr_;
+		}
+		(*musicButtonsItr_)->updateState(musicButtonState::SELECTED);				//今選択中のボタンを選択に変更
+		break;
+
+	case sf::Keyboard::Enter:
+		(*musicButtonsItr_)->updateState(musicButtonState::CLICKED);				//今選択中のボタンをクリック状態に変更
+		sceneflag_ = FINISHED;
+		break;
+
+	case sf::Keyboard::Escape:
+		sceneflag_ = FINISHED;
+		break;
+
+	default:
+		return 0;
+	}
+	return 0;
+}
+
 std::optional<jk::beatmap> jk::map_select_renderer::get_selected() const {
 	if (musicButtonsItr_ == musicButtons_.end()) return std::nullopt;
 	auto bptr = (*musicButtonsItr_)->get_beatmap();
@@ -76,29 +128,29 @@ std::uint32_t jk::map_select_renderer::input(const sf::Event & e) noexcept
 	if (e.type == sf::Event::KeyPressed) {
 		switch (e.key.code) {
 		case sf::Keyboard::Up:
-			(*musicButtonsItr_)->setState(musicButtonState::NOT_SELECTED);			//今選択中のボタンを非選択に変更
+			(*musicButtonsItr_)->updateState(musicButtonState::NOT_SELECTED);			//今選択中のボタンを非選択に変更
 			
 			if (musicButtonsItr_ == musicButtons_.begin()) {
 				musicButtonsItr_ = musicButtons_.end();
 			}else {
 				--musicButtonsItr_;
 			}
-			(*musicButtonsItr_)->setState(musicButtonState::SELECTED);				//今選択中のボタンを選択に変更
+			(*musicButtonsItr_)->updateState(musicButtonState::SELECTED);				//今選択中のボタンを選択に変更
 			break;
 
 		case sf::Keyboard::Down:
-			(*musicButtonsItr_)->setState(musicButtonState::NOT_SELECTED);			//今選択中のボタンを非選択に変更
+			(*musicButtonsItr_)->updateState(musicButtonState::NOT_SELECTED);			//今選択中のボタンを非選択に変更
 			if (musicButtonsItr_ == musicButtons_.end()) {
 				musicButtonsItr_ = musicButtons_.begin();
 			}
 			else {
 				++musicButtonsItr_;
 			}
-			(*musicButtonsItr_)->setState(musicButtonState::SELECTED);				//今選択中のボタンを選択に変更
+			(*musicButtonsItr_)->updateState(musicButtonState::SELECTED);				//今選択中のボタンを選択に変更
 			break;
 
 		case sf::Keyboard::Enter:
-			(*musicButtonsItr_)->setState(musicButtonState::CLICKED);				//今選択中のボタンをクリック状態に変更
+			(*musicButtonsItr_)->updateState(musicButtonState::CLICKED);				//今選択中のボタンをクリック状態に変更
 			sceneflag_ = FINISHED;
 			break;
 		
@@ -107,7 +159,6 @@ std::uint32_t jk::map_select_renderer::input(const sf::Event & e) noexcept
 			break;
 		}	
 	}
-
 	return components_.event_procedure(e);
 }
 

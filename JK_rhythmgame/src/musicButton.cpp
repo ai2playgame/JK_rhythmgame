@@ -33,7 +33,8 @@ jk::beatmap* jk::musicButton::get_beatmap() const
 	return beatmap_;
 }
 
-void jk::musicButton::setState(musicButtonState::STATE state)
+void jk::musicButton::updateState(musicButtonState::STATE state)
 {
 	state_ = state;
+	update();
 }
